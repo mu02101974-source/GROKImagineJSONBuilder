@@ -1,6 +1,11 @@
 <h1>GROK Imagine JSON Builder</h1>
 
-<p>Create or edit a structured prompt JSON. Live preview updates as you type. Use Load Sample to start from the provided spec.</p>
+<p>
+Create or edit a structured prompt in JSON format for Grok to create pictures or Animations.
+  
+The JSON preview updates as you type.
+
+You can use the button "Load Sample" to start with a working JSON prompt.</p>
 
 <hr>
 
