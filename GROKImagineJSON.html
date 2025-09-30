@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GROK Imagine – JSON Builder</title>
+  <style>
+    :root{
+      --bg:#0b1324; --panel:#101a33; --ink:#e6ecff; --muted:#a9b3d1; --accent:#5ee1ff; --accent-2:#7cf7a4; --line:#223057; --bad:#ff7a7a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; color:var(--ink);
+      background:
+        radial-gradient(1200px 800px at 80% -10%, #142552 0%, rgba(20,37,82,0) 70%),
+        radial-gradient(900px 700px at -10% 110%, #0f1f45 0%, rgba(15,31,69,0) 70%),
+        var(--bg);
+      line-height:1.4;
+    }
+    header{
+      position:sticky; top:0; z-index:10; backdrop-filter:saturate(140%) blur(8px);
+      background:linear-gradient(180deg, rgba(11,19,36,.92), rgba(11,19,36,.8));
+      border-bottom:1px solid var(--line);
+      padding:.9rem 1rem;
+    }
+    header h1{margin:0; font-size:1.15rem; letter-spacing:.3px}
+    header p{margin:.25rem 0 0; color:var(--muted); font-size:.9rem}
+
+    .wrap{display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; padding:16px;}
+    @media (max-width: 1100px){.wrap{grid-template-columns: 1fr;}}
+
+    .panel{
+      background:linear-gradient(180deg, rgba(17,28,56,.9), rgba(13,22,44,.9));
+      border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .grid{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px}
+    .grid-3{display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px}
+    .grid-1{display:grid; grid-template-columns: 1fr; gap:12px}
+
+    fieldset{border:1px dashed var(--line); border-radius:12px; padding:12px; margin:0}
+    legend{padding:0 .4rem; color:var(--accent); font-size:.95rem}
+
+    label{display:block; font-size:.85rem; color:var(--muted); margin-bottom:.35rem}
+    input[type="text"], input[type="number"], textarea, select{
+      width:100%; background:#0e1a34; color:var(--ink); border:1px solid #1f2c52; border-radius:10px; padding:.6rem .7rem; outline:none;
+    }
+    textarea{min-height:120px; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:.9rem}
+
+    .controls{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+    .btn{appearance:none; border:none; border-radius:999px; padding:.55rem .9rem; color:#031024; font-weight:600; cursor:pointer}
+    .btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line)}
+    .btn-accent{background:linear-gradient(90deg, var(--accent), var(--accent-2))}
+    .btn-danger{background:linear-gradient(90deg, #ff9f9f, #ff7a7a)}
+    .btn-sm{font-size:.8em; padding:.2rem .6rem;}
+
+    .tag{display:inline-block; border:1px solid var(--line); border-radius:999px; padding:.2rem .55rem; font-size:.75rem; color:var(--muted)}
+
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .radio{display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:.9rem}
+    .radio label{margin:0}
+
+    .list{display:flex; flex-direction:column; gap:10px}
+    .list-item{display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center}
+    .small{font-size:.8rem; color:var(--muted)}
+
+    .sticky-actions{position:sticky; bottom:10px; display:flex; gap:8px; justify-content:flex-end; margin-top:14px}
+
+    .footer-note{color:var(--muted); font-size:.8rem; margin-top:10px}
+    .help{font-size:.8rem; color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .section-fields[hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GROK Imagine JSON Builder</h1>
+    <p>Create or edit a structured prompt JSON. Live preview updates as you type. Use <span class="tag">Load Sample</span> to start from the provided spec.</p>
+  </header>
+
+  <div class="wrap">
+    <main class="panel" id="formPanel">
+      <div class="controls" style="justify-content:space-between; margin-bottom:8px">
+        <div class="row" style="gap:6px">
+          <button class="btn btn-ghost" id="loadSample">Load Sample</button>
+          <button class="btn btn-ghost" id="clearAll">Clear All</button>
+        </div>
+        <div class="row">
+          <span class="small">Fields auto-sync → JSON</span>
+        </div>
+      </div>
+
+      <form id="jsonForm" class="grid-1">
+        <fieldset>
+          <legend>Basics</legend>
+          <div class="grid">
+            <div>
+              <label for="title">Title</label>
+              <input id="title" type="text" data-path="title" placeholder="Title" />
+            </div>
+            <div>
+              <label for="style">Style</label>
+              <input id="style" type="text" data-path="style" placeholder="e.g., surreal photoreal, vibrant colorful, bubble particle effects" />
+            </div>
+            <div class="grid-1">
+              <label for="prompt">Prompt</label>
+              <textarea id="prompt" data-path="prompt" placeholder="Main prompt"></textarea>
+            </div>
+            <div class="grid-1">
+              <label for="negative_prompt">Negative Prompt</label>
+              <textarea id="negative_prompt" data-path="negative_prompt" placeholder="What to avoid"></textarea>
+            </div>
+            <div>
+              <label for="palette">Palette</label>
+              <input id="palette" type="text" data-path="palette" placeholder="e.g., dominant blues, bioluminescent greens..." />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Composition</legend>
+          <div class="grid">
+            <div>
+              <label>Framing</label>
+              <input type="text" data-path="composition.framing" placeholder="vertical tripartite balance..."/>
+            </div>
+            <div>
+              <label>Angle</label>
+              <input type="text" data-path="composition.angle" placeholder="slightly low tilt toward the swarm"/>
+            </div>
+            <div>
+              <label>Lens</label>
+              <input type="text" data-path="composition.lens" placeholder="35mm"/>
+            </div>
+            <div>
+              <label>Subject Scale</label>
+              <input type="text" data-path="composition.subject_scale" placeholder="swarm spans top third..."/>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Animation Section -->
+        <fieldset>
+          <legend>
+            Animation
+            <button type="button" class="btn btn-ghost btn-sm" id="add-animation">Add</button>
+            <button type="button" class="btn btn-danger btn-sm" id="del-animation">Delete</button>
+          </legend>
+          <div class="section-fields" id="fields-animation">
+            <div class="grid">
+              <div>
+                <label>Motion Type</label>
+                <input type="text" data-path="animation.motion_type" placeholder="luminance + controlled undulation"/>
+              </div>
+              <div>
+                <label>Camera</label>
+                <input type="text" data-path="animation.camera" placeholder="slow push-in (~3–4% over 6s)"/>
+              </div>
+              <div>
+                <label>Intensity</label>
+                <select data-path="animation.intensity">
+                  <option value=""></option>
+                  <option value="low">low</option>
+                  <option value="medium">medium</option>
+                  <option value="high">high</option>
+                </select>
+              </div>
+              <div>
+                <label>Duration (seconds)</label>
+                <input type="number" step="0.1" min="0" data-path="animation.duration_seconds" />
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <label>Beats</label>
+              <div id="beatsList" class="list"></div>
+              <div class="row">
+                <button type="button" class="btn btn-ghost" id="addBeat">+ Add Beat</button>
+              </div>
+            </div>
+
+            <div style="margin-top:12px" class="grid-1">
+              <label>Animation Constraints</label>
+              <div class="grid">
+                <div>
+                  <label>Glow Rules</label>
+                  <input type="text" data-path="animation.constraints.glow_rules"/>
+                </div>
+                <div>
+                  <label>Undulation Rules</label>
+                  <input type="text" data-path="animation.constraints.undulation_rules"/>
+                </div>
+                <div>
+                  <label>Bubble Rules</label>
+                  <input type="text" data-path="animation.constraints.bubble_rules"/>
+                </div>
+                <div>
+                  <label>Ripple Rules</label>
+                  <input type="text" data-path="animation.constraints.ripple_rules"/>
+                </div>
+                <div>
+                  <label>Parametric</label>
+                  <input type="text" data-path="animation.constraints.parametric"/>
+                </div>
+                <div>
+                  <label>Brightness Range %</label>
+                  <input type="text" data-path="animation.constraints.brightness_range_percent" placeholder="e.g., 88–112"/>
+                </div>
+                <div>
+                  <label>Undulation Range (°)</label>
+                  <input type="text" data-path="animation.constraints.undulation_range_degrees" placeholder="e.g., ±4"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Lighting Section -->
+        <fieldset>
+          <legend>
+            Lighting
+            <button type="button" class="btn btn-ghost btn-sm" id="add-lighting">Add</button>
+            <button type="button" class="btn btn-danger btn-sm" id="del-lighting">Delete</button>
+          </legend>
+          <div class="section-fields" id="fields-lighting">
+            <div class="grid">
+              <div>
+                <label>Mood</label>
+                <input type="text" data-path="lighting.mood"/>
+              </div>
+              <div>
+                <label>Time of Day</label>
+                <input type="text" data-path="lighting.time_of_day"/>
+              </div>
+              <div class="grid-1">
+                <label>Quality</label>
+                <textarea data-path="lighting.quality"></textarea>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Subject Section -->
+        <fieldset>
+          <legend>
+            Subject
+            <button type="button" class="btn btn-ghost btn-sm" id="add-subject">Add</button>
+            <button type="button" class="btn btn-danger btn-sm" id="del-subject">Delete</button>
+          </legend>
+          <div class="section-fields" id="fields-subject">
+            <div class="grid">
+              <div class="grid-1">
+                <label>Description</label>
+                <textarea data-path="subject.description"></textarea>
+              </div>
+              <div class="grid-1">
+                <label>Action</label>
+                <textarea data-path="subject.action"></textarea>
+              </div>
+              <div>
+                <label>Identity Rules</label>
+                <input type="text" data-path="subject.identity_rules"/>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Environment Section -->
+        <fieldset>
+          <legend>
+            Environment
+            <button type="button" class="btn btn-ghost btn-sm" id="add-environment">Add</button>
+            <button type="button" class="btn btn-danger btn-sm" id="del-environment">Delete</button>
+          </legend>
+          <div class="section-fields" id="fields-environment">
+            <div class="grid">
+              <div>
+                <label>Location</label>
+                <input type="text" data-path="environment.location"/>
+              </div>
+              <div class="grid-1">
+                <label>Atmosphere</label>
+                <textarea data-path="environment.atmosphere"></textarea>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Audio Section -->
+        <fieldset>
+          <legend>
+            Audio
+            <button type="button" class="btn btn-ghost btn-sm" id="add-audio">Add</button>
+            <button type="button" class="btn btn-danger btn-sm" id="del-audio">Delete</button>
+          </legend>
+          <div class="section-fields" id="fields-audio">
+            <div class="grid">
+              <div>
+                <label>Mood</label>
+                <input type="text" data-path="audio.mood"/>
+              </div>
+              <div class="grid-1">
+                <label>Notes</label>
+                <textarea data-path="audio.notes"></textarea>
+              </div>
+            </div>
+            <div style="margin-top:8px">
+              <label>Audio Elements</label>
+              <div id="audioElements" class="list"></div>
+              <div class="row">
+                <button type="button" class="btn btn-ghost" id="addAudio">+ Add Element</button>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- The rest of your form (constraints, output, safety, etc.) stays unchanged -->
+
+        <fieldset>
+          <legend>Global Constraints</legend>
+          <div class="grid">
+            <div class="row radio">
+              <label class="small">Prevent Style Drift</label>
+              <label><input type="radio" name="prevent_style_drift" value="true" data-path="constraints.prevent_style_drift"> Yes</label>
+              <label><input type="radio" name="prevent_style_drift" value="false" data-path="constraints.prevent_style_drift"> No</label>
+            </div>
+            <div class="row radio">
+              <label class="small">Avoid Artifacts</label>
+              <label><input type="radio" name="avoid_artifacts" value="true" data-path="constraints.avoid_artifacts"> Yes</label>
+              <label><input type="radio" name="avoid_artifacts" value="false" data-path="constraints.avoid_artifacts"> No</label>
+            </div>
+            <div>
+              <label>Complexity</label>
+              <select data-path="constraints.complexity">
+                <option value=""></option>
+                <option value="light">light</option>
+                <option value="moderate">moderate</option>
+                <option value="heavy">heavy</option>
+              </select>
+            </div>
+            <div class="grid-1">
+              <label>Loop Requirement</label>
+              <input type="text" data-path="constraints.loop" placeholder="Describe loop reset behavior"/>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Output</legend>
+          <div class="grid-3">
+            <div>
+              <label>Aspect Ratio</label>
+              <input type="text" data-path="output.aspect_ratio" placeholder="9:16"/>
+            </div>
+            <div>
+              <label>Resolution</label>
+              <input type="text" data-path="output.resolution" placeholder="1080x1920"/>
+            </div>
+            <div>
+              <label>FPS</label>
+              <input type="number" min="1" step="1" data-path="output.fps"/>
+            </div>
+          </div>
+          <div class="row radio" style="margin-top:8px">
+            <label class="small">Loop</label>
+            <label><input type="radio" name="output_loop" value="true" data-path="output.loop"> True</label>
+            <label><input type="radio" name="output_loop" value="false" data-path="output.loop"> False</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Safety</legend>
+          <div class="grid">
+            <div class="row radio">
+              <label class="small">NSFW</label>
+              <label><input type="radio" name="nsfw" value="on" data-path="safety.nsfw"> On</label>
+              <label><input type="radio" name="nsfw" value="off" data-path="safety.nsfw"> Off</label>
+            </div>
+            <div class="row radio">
+              <label class="small">No Likeness of Real People</label>
+              <label><input type="radio" name="no_likeness" value="true" data-path="safety.no_likeness_of_real_people"> Yes</label>
+              <label><input type="radio" name="no_likeness" value="false" data-path="safety.no_likeness_of_real_people"> No</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="sticky-actions">
+          <button type="button" class="btn btn-accent" id="copyJson">Copy JSON</button>
+          <button type="button" class="btn btn-ghost" id="downloadJson">Download</button>
+        </div>
+      </form>
+    </main>
+
+    <aside class="panel">
+      <div class="controls" style="justify-content:space-between; margin-bottom:6px">
+        <div class="row" style="gap:6px">
+          <span class="tag">Live JSON</span>
+        </div>
+        <div class="row small">
+          <span id="bytes">0 bytes</span>
+        </div>
+      </div>
+      <textarea id="output" class="mono" style="min-height:70vh" readonly></textarea>
+      <p class="footer-note">Tip: You can paste JSON here to load it. The form will update.</p>
+    </aside>
+  </div>
+
+  <script>
+    const SECTION_DEFAULTS = {
+      animation: {
+        motion_type: "",
+        camera: "",
+        intensity: "",
+        beats: [],
+        duration_seconds: undefined,
+        constraints: {}
+      },
+      lighting: {
+        mood: "",
+        time_of_day: "",
+        quality: ""
+      },
+      subject: {
+        description: "",
+        action: "",
+        identity_rules: ""
+      },
+      environment: {
+        location: "",
+        atmosphere: ""
+      },
+      audio: {
+        mood: "",
+        elements: [],
+        notes: ""
+      }
+    };
+
+    const SAMPLE_JSON = {
+      "title": "Deep Sea Lumina Swarm",
+      "prompt": "Vibrant colorful underwater abyss scene in a tall frame: towering bioluminescent coral spires rise like ancient pillars; a central glowing jellyfish swarm radiates light trails into the depths. Corals have intricate textured surfaces with drifting plankton; below, seabed layers shimmer with seashell fragments like sunken treasures—rendered in rich hues. Subtle bubble and ripple effects articulate all forms. Action–Lighting–Style: jellyfish pulse and corals undulate in sync (action), swarm glow as the key with soft rim from abyssal lights (lighting), surreal graphic underwater in vibrant colors (style).",
+      "negative_prompt": "black and white, monochrome, grayscale, sepia, duotone, cyanotype, panel borders, captions, text, letters, numbers, logos, watermark, cartoon, watercolor, heavy motion blur, banding, moiré, aliasing stair-steps, chromatic aberration, lens dirt, extra figures, surface elements, mechanical structures",
+      "style": "surreal photoreal, vibrant colorful, bubble particle effects",
+      "composition": {
+        "framing": "vertical tripartite balance without drawn lines: swarm in top third, coral spires center, seabed bottom",
+        "angle": "slightly low tilt toward the swarm",
+        "lens": "35mm",
+        "subject_scale": "swarm spans top third; spires fill midframe"
+      },
+      "palette": "vibrant spectrum with dominant blues, bioluminescent greens, and corals (#0000FF–#00FF00)",
+      "animation": {
+        "motion_type": "luminance + controlled undulation",
+        "camera": "slow push-in (~3–4% over 6s), no zoom/FOV change",
+        "intensity": "low",
+        "beats": [
+          "Establish: glow dim; trails thin; corals stable; seabed shimmering softly.",
+          "Inhale: glow brightens and trails widen ~12%; corals undulate subtly (≤4°); seabed intensifies in color saturation.",
+          "Exhale: luminance eases to baseline; undulation returns; seabed fades to starting shimmer for a seamless loop."
+        ],
+        "duration_seconds": 6,
+        "constraints": {
+          "glow_rules": "soft core with colorful aura; no flicker",
+          "undulation_rules": "lock topology; allow only slight movement and breathing",
+          "bubble_rules": "colored bubbles drift minimally; no streak artifacts",
+          "ripple_rules": "thin, stable, colorful only; avoid banding",
+          "parametric": "sine-wave coupling for glow brightness and coral undulation",
+          "brightness_range_percent": "88–112",
+          "undulation_range_degrees": "±4"
+        }
+      },
+      "lighting": {
+        "mood": "serene, wondrous, vibrant",
+        "time_of_day": "eternal abyss with bioluminescent glows",
+        "quality": "swarm glow as primary key; soft rim from coral lights; minimal, controlled bloom on highlights; preserve deep blues without crush"
+      },
+      "subject": {
+        "description": "Bioluminescent jellyfish swarm over coral spires; colorful shell-lit seabed below",
+        "action": "breath-like pulsing of glow and coral undulation; seabed shimmers",
+        "identity_rules": "abstract underwater; no likeness of real people"
+      },
+      "environment": {
+        "location": "vibrant abyssal depths",
+        "atmosphere": "thin colorful bubbles around swarm; layered currents; scattered glowing seabed"
+      },
+      "audio": {
+        "mood": "ambient, oceanic",
+        "elements": ["bubbling currents synced to glow pulses", "distant marine calls", "faint wave ripple at inhale crest"],
+        "notes": "no vocals or melody; wide stereo; gentle dynamics"
+      },
+      "constraints": {
+        "prevent_style_drift": true,
+        "avoid_artifacts": true,
+        "complexity": "moderate",
+        "loop": "return glow width, swarm luminance, coral undulation, and shell density to frame-one state"
+      },
+      "output": {
+        "aspect_ratio": "9:16",
+        "resolution": "1080x1920",
+        "fps": 24,
+        "loop": true
+      },
+      "safety": {
+        "nsfw": "off",
+        "no_likeness_of_real_people": true
+      }
+    };
+
+    // --- helpers ---
+    const $ = (s, el=document) => el.querySelector(s);
+    const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+
+    // Recursively remove empty fields from an object
+    function clean(obj) {
+      if (Array.isArray(obj)) {
+        return obj
+          .map(clean)
+          .filter(
+            v =>
+              !(
+                v === undefined ||
+                v === null ||
+                v === '' ||
+                (typeof v === 'object' &&
+                  v !== null &&
+                  Object.keys(v).length === 0)
+              )
+          );
+      } else if (typeof obj === 'object' && obj !== null) {
+        const out = {};
+        for (const [k, v] of Object.entries(obj)) {
+          const cleaned = clean(v);
+          if (
+            cleaned !== undefined &&
+            cleaned !== null &&
+            cleaned !== '' &&
+            !(Array.isArray(cleaned) && cleaned.length === 0) &&
+            !(typeof cleaned === 'object' && !Array.isArray(cleaned) && Object.keys(cleaned).length === 0)
+          ) {
+            out[k] = cleaned;
+          }
+        }
+        return out;
+      }
+      return obj;
+    }
+
+    const state = structuredClone(SAMPLE_JSON);
+
+    function setByPath(obj, path, value){
+      const parts = path.split('.');
+      let ref = obj;
+      for(let i=0;i<parts.length-1;i++){
+        const k = parts[i];
+        if(!(k in ref) || typeof ref[k] !== 'object') ref[k] = {};
+        ref = ref[k];
+      }
+      ref[parts[parts.length-1]] = value;
+    }
+    function getByPath(obj, path){
+      return path.split('.').reduce((o,k)=> (o? o[k] : undefined), obj);
+    }
+    function updateBytes(){
+      const cleaned = clean(state);
+      const text = JSON.stringify(cleaned, null, 2);
+      $('#output').value = text;
+      $('#bytes').textContent = new Blob([text]).size + ' bytes';
+    }
+    function syncFormFromState(){
+      // Show/hide section fields and enable/disable buttons
+      for (const section of Object.keys(SECTION_DEFAULTS)) {
+        const hasSection = !!state[section];
+        const fields = document.getElementById(`fields-${section}`);
+        if (fields) fields.hidden = !hasSection;
+        const addBtn = $(`#add-${section}`);
+        const delBtn = $(`#del-${section}`);
+        if (addBtn) {
+          // Only allow adding Audio if Animation exists
+          if (section === "audio" && !state.animation) {
+            addBtn.disabled = true;
+          } else {
+            addBtn.disabled = hasSection;
+          }
+          addBtn.onclick = () => {
+            if (section === "audio" && !state.animation) return;
+            if (!state[section]) {
+              state[section] = structuredClone(SECTION_DEFAULTS[section]);
+              syncFormFromState();
+            }
+          };
+        }
+        if (delBtn) {
+          delBtn.disabled = !hasSection;
+          delBtn.onclick = () => {
+            // If deleting Animation, also delete Audio
+            if (section === "animation" && state.audio) {
+              delete state.audio;
+            }
+            delete state[section];
+            syncFormFromState();
+          };
+        }
+      }
+      // Simple fields
+      $$('[data-path]').forEach(el=>{
+        const path = el.getAttribute('data-path');
+        const val = getByPath(state, path);
+        const type = el.getAttribute('type');
+        if(el.tagName === 'TEXTAREA' || el.tagName === 'INPUT' || el.tagName === 'SELECT'){
+          if(type === 'radio'){
+            el.checked = (String(val) === el.value);
+          } else if(type === 'number'){
+            el.value = (val ?? '');
+          } else {
+            el.value = (val ?? '');
+          }
+        }
+      });
+      renderBeats();
+      renderAudio();
+      updateBytes();
+    }
+
+    function onFieldChange(e){
+      const el = e.target.closest('[data-path]');
+      if(!el) return;
+      let val = el.value;
+      const path = el.getAttribute('data-path');
+      const type = el.getAttribute('type');
+      if(type === 'number'){
+        if(val === '') {
+          val = undefined;
+        } else {
+          const num = Number(val);
+          val = Number.isFinite(num) ? num : undefined;
+        }
+      }
+      if(type === 'radio'){
+        if(!el.checked) return;
+        if(el.value === 'true') val = true;
+        else if(el.value === 'false') val = false;
+      }
+      setByPath(state, path, val);
+      updateBytes();
+    }
+
+    // --- Beats (array of strings) ---
+    function renderBeats(){
+      const container = $('#beatsList');
+      container.innerHTML = '';
+      const beats = state.animation?.beats ?? [];
+      beats.forEach((b, i)=>{
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.innerHTML = `
+          <textarea data-idx="${i}" class="mono" style="min-height:64px">${b}</textarea>
+          <div class="row">
+            <button type="button" class="btn btn-ghost" data-act="up" data-idx="${i}">▲</button>
+            <button type="button" class="btn btn-ghost" data-act="down" data-idx="${i}">▼</button>
+            <button type="button" class="btn btn-danger" data-act="del" data-idx="${i}">Delete</button>
+          </div>`;
+        container.appendChild(row);
+      });
+      container.querySelectorAll('textarea').forEach(t=>{
+        t.addEventListener('input', ()=>{
+          const i = Number(t.dataset.idx);
+          state.animation.beats[i] = t.value;
+          updateBytes();
+        });
+      });
+      container.querySelectorAll('button').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const i = Number(b.dataset.idx);
+          const act = b.dataset.act;
+          const arr = state.animation.beats;
+          if(act==='del'){ arr.splice(i,1); }
+          if(act==='up' && i>0){ const t=arr[i-1]; arr[i-1]=arr[i]; arr[i]=t; }
+          if(act==='down' && i<arr.length-1){ const t=arr[i+1]; arr[i+1]=arr[i]; arr[i]=t; }
+          renderBeats(); updateBytes();
+        });
+      });
+    }
+
+    // --- Audio elements (array of strings) ---
+    function renderAudio(){
+      const container = $('#audioElements');
+      container.innerHTML = '';
+      const items = state.audio?.elements ?? [];
+      items.forEach((txt, i)=>{
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.innerHTML = `
+          <input type="text" value="${txt}" data-idx="${i}" />
+          <div class="row">
+            <button type="button" class="btn btn-ghost" data-act="up" data-idx="${i}">▲</button>
+            <button type="button" class="btn btn-ghost" data-act="down" data-idx="${i}">▼</button>
+            <button type="button" class="btn btn-danger" data-act="del" data-idx="${i}">Delete</button>
+          </div>`;
+        container.appendChild(row);
+      });
+      container.querySelectorAll('input[type="text"]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const i = Number(inp.dataset.idx);
+          state.audio.elements[i] = inp.value;
+          updateBytes();
+        });
+      });
+      container.querySelectorAll('button').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const i = Number(b.dataset.idx);
+          const act = b.dataset.act;
+          const arr = state.audio.elements;
+          if(act==='del'){ arr.splice(i,1); }
+          if(act==='up' && i>0){ const t=arr[i-1]; arr[i-1]=arr[i]; arr[i]=t; }
+          if(act==='down' && i<arr.length-1){ const t=arr[i+1]; arr[i+1]=arr[i]; arr[i]=t; }
+          renderAudio(); updateBytes();
+        });
+      });
+    }
+
+    // Paste JSON directly into textarea to load
+    $('#output').addEventListener('paste', (e)=>{
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      try{
+        const parsed = JSON.parse(text);
+        Object.keys(state).forEach(k=> delete state[k]);
+        Object.assign(state, parsed);
+        syncFormFromState();
+      }catch(err){
+        // ignore if not JSON
+      }
+    });
+
+    // Events
+    $('#jsonForm').addEventListener('input', onFieldChange);
+
+    $('#addBeat').addEventListener('click', ()=>{
+      if(!state.animation) state.animation = {};
+      if(!Array.isArray(state.animation.beats)) state.animation.beats = [];
+      state.animation.beats.push('');
+      renderBeats(); updateBytes();
+    });
+    $('#addAudio').addEventListener('click', ()=>{
+      if(!state.audio) state.audio = {};
+      if(!Array.isArray(state.audio.elements)) state.audio.elements = [];
+      state.audio.elements.push('');
+      renderAudio(); updateBytes();
+    });
+
+    $('#copyJson').addEventListener('click', async ()=>{
+      const cleaned = clean(state);
+      await navigator.clipboard.writeText(JSON.stringify(cleaned, null, 2));
+      const btn = $('#copyJson');
+      const txt = btn.textContent; btn.textContent = 'Copied!';
+      setTimeout(()=> btn.textContent = txt, 1000);
+    });
+
+    $('#downloadJson').addEventListener('click', ()=>{
+      const cleaned = clean(state);
+      const blob = new Blob([JSON.stringify(cleaned, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (state.title ? state.title.replace(/\s+/g,'_') : 'scene') + '.json';
+      a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    $('#loadSample').addEventListener('click', ()=>{
+      Object.keys(state).forEach(k=> delete state[k]);
+      Object.assign(state, structuredClone(SAMPLE_JSON));
+      syncFormFromState();
+    });
+
+    $('#clearAll').addEventListener('click', ()=>{
+      Object.keys(state).forEach(k=> delete state[k]);
+      Object.assign(state, {});
+      syncFormFromState();
+    });
+
+    // initialize
+    syncFormFromState();
+  </script>
+</body>
+</html>
